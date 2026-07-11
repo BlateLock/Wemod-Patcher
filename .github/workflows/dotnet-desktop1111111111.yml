@@ -1,0 +1,51 @@
+name: Build Wand Enhancer EXE
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # 打印所有csproj用于排错
+      - name: List all project files
+        run: Get-ChildItem -Recurse *.csproj
+
+      # 修正路径与文件名，进入正确项目目录发布
+      - name: Publish Single EXE
+        run: |
+          cd WeModPatcher
+          dotnet publish WeModPatcher.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+      # 上传编译好的exe
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WandEnhancer-Win-x64
+          path: WeModPatcher/bin/Release/net8.0/win-x64/publish/*.exe
+
+      # 打版本标签时自动发布到GitHub Release
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: WeModPatcher/bin/Release/net8.0/win-x64/publish/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
