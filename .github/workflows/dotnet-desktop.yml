@@ -1,0 +1,25 @@
+name: Build WandEnhancer Executable
+on: [push, pull_request]
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # 编译单文件Release可执行程序
+      - name: Publish Single EXE
+        run: |
+          dotnet publish Wemod-Patcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+
+      # 上传编译好的WandEnhancer制品
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WandEnhancer-Win-x64
+          path: bin/Release/net8.0/win-x64/publish/WandEnhancer.exe
